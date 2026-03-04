@@ -1,25 +1,19 @@
 import React, { useReducer, useEffect } from 'react';
-import { taskReducer, ACTIONS } from './state/taskReducer';
+import { taskReducer, initialState, ACTIONS } from './state/taskReducer';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import TaskFilter from './components/TaskFilter';
+import SearchBar from './components/SearchBar'; // NEW
 import './styles/index.css';
-
-const initialState = {
-  tasks: [], // We start empty for a clean slate
-  filter: 'all'
-};
 
 function App() {
   const [state, dispatch] = useReducer(taskReducer, initialState);
 
-  // 💡 Smart UX: Persist tasks to Local Storage
+  // Sync with LocalStorage
   useEffect(() => {
-    const savedTasks = JSON.parse(localStorage.getItem('aura_tasks'));
-    if (savedTasks) {
-      savedTasks.forEach(task => {
-        dispatch({ type: ACTIONS.ADD_TASK, payload: task });
-      });
+    const saved = JSON.parse(localStorage.getItem('aura_tasks'));
+    if (saved) {
+      saved.forEach(task => dispatch({ type: ACTIONS.ADD_TASK, payload: task }));
     }
   }, []);
 
@@ -27,20 +21,18 @@ function App() {
     localStorage.setItem('aura_tasks', JSON.stringify(state.tasks));
   }, [state.tasks]);
 
-  // Calculate stats for the Header
-  const completedCount = state.tasks.filter(t => t.isCompleted).length;
-  const totalCount = state.tasks.length;
-
   return (
     <div className="aura-app-container">
       <header className="app-header">
         <h1>Aura <span>Task Manager</span></h1>
         <div className="stats-badge">
-          {completedCount} / {totalCount} Done
+          {state.tasks.filter(t => t.isCompleted).length} / {state.tasks.length} Done
         </div>
       </header>
 
       <main className="app-content">
+        <SearchBar searchQuery={state.searchQuery} dispatch={dispatch} />
+        
         <TaskForm dispatch={dispatch} />
         
         <div className="view-controls">
@@ -50,13 +42,10 @@ function App() {
         <TaskList 
           tasks={state.tasks} 
           filter={state.filter} 
+          searchQuery={state.searchQuery} // NEW
           dispatch={dispatch} 
         />
       </main>
-
-      <footer className="app-footer">
-        <p>Built with React & useReducer • {new Date().getFullYear()}</p>
-      </footer>
     </div>
   );
 }
